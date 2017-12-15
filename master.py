@@ -31,6 +31,12 @@ def  do_work():
     else:
         return "zero Work"
 
+@app.route('/executiontime', methods=['POST'])
+def execution_time():
+     start_time = request.json
+     end_time = time() - int(start_time['start_time'])
+     return jsonify({'executiontime': end_time})
+
     if __name__ == '__main__':
         task_2 = 0
         app.run(threaded=True, debug=True)
