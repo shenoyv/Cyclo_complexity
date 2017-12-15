@@ -3,8 +3,27 @@ from radon.complexity import cc_visit, cc_rank
 from pygit2 import Repository, clone_repository
 import requests, json
 from time import time
-from gitrepo import set_repo, get_commits
-def compute_complexity(source) #function to calculate codecomplexity
+
+
+# pulls repo from url and stores clone
+def set_repo():
+    try:
+        repo = Repository('~/repo')
+    except:
+        repo_url = 'https://github.com/EntilZha/PyFunctional.git'
+        repo_path = '~/repo'
+        repo = clone_repository(repo_url, repo_path)
+    return repo
+
+# walk through commits in the given repo and store in list
+def get_commits(repo):
+    commits = []
+    for commit in repo.walk(repo.head.target):
+        commits.append(repo.get(commit.id))
+    return commits
+
+#function to calculate codecomplexity
+def compute_complexity(source):
     result =[]
     blocks = cc_visit(source)
     for func in blocks:
@@ -43,5 +62,41 @@ def tot_work(repo):
         files = extract_files(sources)
         return files, id, executiontime
 
+def num_work(work):
+    results = []
+    for file in work:
+        try:
+            results.append(compute_complexity(file))
+        except:
+            results.append('')
+    return results
 
+# post results to the url
+def send_results(result):
+    requests.post('http://127.0.0.1:5000/results', json=result,  params={'key': 'value'})
+    response = requests.get('http://127.0.0.1:5000/results',  params={'key': 'value'})
+    return response
 
+if __name__ == '__main__':
+    bool = True
+    executiontime_list = []
+    result_list = []
+    id = 0
+    while bool: #run until work is finished
+        repo = set_repo()
+        commits = get_commits(repo)
+        try:
+            #while id < len(commits):
+            work, id, executiontime = tot_work(repo)
+            print(id)
+            result = num_work(work)
+            result_list.append(result)
+            executiontime_list.append(executiontime)
+        except:
+            bool = False
+            print("Process Terminated")
+    report = {'Result': result_list, 'executiontime': executiontime_list}
+    response = send_results(report)
+    message = response.json()
+    print("complexity_score", message['complexity_score'])
+    print("execution_time", message['execution_time'])

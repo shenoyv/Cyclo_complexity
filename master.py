@@ -2,13 +2,13 @@ from flask import Flask, request, jsonify
 from time import time
 from pygit2 import Repository, clone_repository
 
-
+app = Flask(__name__)
 def set_repo():
     try:
-        repos = Repository('./repo')
+        repos = Repository('~/repo')
     except:
-           url ='https://github.com/shenoyv/Distributed_file_system.git'
-           path = './repo'
+           url ='https://github.com/EntilZha/PyFunctional.git'
+           path = '~/repo'
            repos = clone_repository(url, path)
     return repos
 
@@ -37,6 +37,30 @@ def execution_time():
      end_time = time() - int(start_time['start_time'])
      return jsonify({'executiontime': end_time})
 
-    if __name__ == '__main__':
+@app.route('/results', methods=['POST','GET'])
+def store_result():
+    global executiontime_list, execution_time, result
+    executiontime_list = []
+    if request.method == 'POST':
+        result = request.json
+        executiontime_list = result['executiontime']
+        execution_time = sum(executiontime_list)
+        return jsonify({'complexity_score': result['Result'], 'execution_time': execution_time})
+    else:
+        return jsonify({'complexity_score': result['Result'], 'execution_time': execution_time})
+
+def server_shutdown():
+    func = request.environ.get('server shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Server')
+    func()
+
+@app.route('/shutdown', methods=['GET'])
+def shutdown():
+    server_shutdown()
+    return jsonify({'message' : 'server is shutting down'})
+
+
+if __name__ == '__main__':
         task_2 = 0
         app.run(threaded=True, debug=True)
