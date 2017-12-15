@@ -4,10 +4,6 @@ from pygit2 import Repository, clone_repository
 import requests, json
 from time import time
 from gitrepo import set_repo, get_commits
-
-
-
-
 def compute_complexity(source) #function to calculate codecomplexity
     result =[]
     blocks = cc_visit(source)
@@ -16,13 +12,36 @@ def compute_complexity(source) #function to calculate codecomplexity
     return result
 
 def tot_data(tree, repo):
-      datas = []
-    for x in tree:
-        if ".py" in x.name:
-             datas.append(x)
-        if "." not in x.name:
-           if x.type == 'tree':
-                new_tree = repo.get(x.id)
+    datas = []
+    for entry in tree:
+        if ".py" in entry.name:
+            datas.append(entry)
+        if "." not in entry.name:
+           if entry.type == 'tree':
+                new_tree = repo.get(entry.id)
                 datas += (tot_data(new_tree, repo))
     return datas
+
+def extract_files(sources):
+    files = []
+    for source in sources:
+        files.append(repo[source.id].data.decode("utf-8"))
+    return files
+
+def tot_work(repo):
+    post = requests.post('http://127.0.0.1:5000/executiontime', json={'start_time': time()})
+    response = requests.get('http://127.0.0.1:5000/work', params={'key': 'value'})
+    while response.status_code == 200:
+        response.encoding = 'utf-8'
+        json_file = response.json()
+        post.encoding = 'utf-8'
+        post_file = post.json()
+        executiontime = post_file['executiontime']
+        id = json_file['id']
+        tree = repo.get(json_file['commit']).tree
+        sources = tot_data(tree, repo)
+        files = extract_files(sources)
+        return files, id, executiontime
+
+
 
